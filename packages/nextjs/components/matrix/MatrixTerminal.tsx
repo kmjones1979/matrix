@@ -90,17 +90,36 @@ export const MatrixTerminal = ({ className = "" }: TerminalProps) => {
 
     // Handle different command modes
     if (commandMode === "passcode") {
+      const cleanedPasscode = cmd.trim().toLowerCase();
       setOutput(prev => [...prev, `> ${cmd}`, "Attempting to validate passcode..."]);
       setIsWaiting(true);
 
       try {
         await solveLevel({
           functionName: "solveLevel",
-          args: [cmd],
+          args: [cleanedPasscode],
         });
         setOutput(prev => [...prev, "Access granted!", ""]);
       } catch (error: any) {
-        setOutput(prev => [...prev, `Access denied: ${error.message || "Invalid passcode"}`, ""]);
+        console.error("Passcode error:", error);
+        let errorMsg = "Invalid passcode";
+
+        // Extract more specific error from blockchain error
+        if (error.message) {
+          if (error.message.includes("user rejected transaction")) {
+            errorMsg = "Transaction rejected";
+          } else if (error.message.includes("Incorrect passcode")) {
+            errorMsg = "Incorrect passcode";
+          } else {
+            // Try to extract specific contract error message
+            const errorMatch = error.message.match(/reason="([^"]+)"/);
+            if (errorMatch && errorMatch[1]) {
+              errorMsg = errorMatch[1];
+            }
+          }
+        }
+
+        setOutput(prev => [...prev, `Access denied: ${errorMsg}`, ""]);
       }
 
       setIsWaiting(false);
@@ -122,12 +141,14 @@ export const MatrixTerminal = ({ className = "" }: TerminalProps) => {
           "  secret    - Discover hidden easter eggs",
           "  bluepill  - Take the blue pill (reset progress)",
           "  about     - About the Matrix",
+          "  debug-passcode - Debug passcode validation (admin only)",
           "",
         ]);
         break;
 
       case "clear":
-        setOutput(["M4TR1X OS v1.0 - Secure Terminal", "Type 'help' for available commands", ""]);
+        // Clear the terminal completely
+        setOutput([]);
         break;
 
       case "status":
@@ -242,6 +263,54 @@ export const MatrixTerminal = ({ className = "" }: TerminalProps) => {
           "— Morpheus",
           "",
         ]);
+        break;
+
+      case "debug-passcode":
+        if (!isConnected) {
+          setOutput(prev => [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""]);
+          break;
+        }
+
+        if (!args.length) {
+          setOutput(prev => [...prev, `> ${cmd}`, "Usage: debug-passcode <passcode>", ""]);
+          break;
+        }
+
+        const testPasscode = args.join(" ").trim().toLowerCase();
+        setOutput(prev => [
+          ...prev,
+          `> ${cmd} ${testPasscode}`,
+          "Debug info:",
+          `Passcode to test: "${testPasscode}"`,
+          `Current level: ${userProgress ? userProgress[0] : "unknown"}`,
+          `Hashed value: ${
+            testPasscode
+              ? "0x" +
+                Array.from(new TextEncoder().encode(testPasscode))
+                  .map(b => b.toString(16).padStart(2, "0"))
+                  .join("")
+              : "none"
+          }`,
+          "Attempting test validation...",
+        ]);
+
+        setIsWaiting(true);
+        try {
+          await solveLevel({
+            functionName: "solveLevel",
+            args: [testPasscode],
+          });
+          setOutput(prev => [...prev, "Success! Passcode is valid.", ""]);
+        } catch (error: any) {
+          console.error("Debug passcode error:", error);
+          setOutput(prev => [
+            ...prev,
+            "Failed to validate passcode.",
+            `Error: ${error.message || "Unknown error"}`,
+            "",
+          ]);
+        }
+        setIsWaiting(false);
         break;
 
       default:

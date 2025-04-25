@@ -18,7 +18,7 @@ contract MatrixContract {
     mapping(address => mapping(string => bool)) public unlockedSecrets; // Track which easter eggs a user has found
     
     // Challenge data
-    mapping(bytes32 => bool) private passcodeHashes; // Hashed passcodes for each level
+    mapping(uint8 => bytes32) private passcodeHashes; // Hashed passcodes for each level
     mapping(uint8 => string) public levelHints; // Hints for each level
     mapping(uint8 => string) public levelNames; // Names for each level
 
@@ -83,9 +83,9 @@ contract MatrixContract {
         
         // Verify passcode
         bytes32 passcodeHash = keccak256(abi.encodePacked(passcode));
-        bytes32 expectedHash = keccak256(abi.encodePacked(_getLevelPasscode(currentLevel)));
         
-        require(passcodeHash == expectedHash, "Incorrect passcode");
+        // Use stored hash for validation instead of hardcoded values
+        require(passcodeHash == passcodeHashes[currentLevel], "Incorrect passcode");
         
         // Level up the user
         userLevel[msg.sender] = currentLevel + 1;
@@ -180,16 +180,7 @@ contract MatrixContract {
     // Internal functions
     function _setPasscodeHash(uint8 level, string memory passcode) private {
         bytes32 passcodeHash = keccak256(abi.encodePacked(passcode));
-        passcodeHashes[keccak256(abi.encodePacked(level))] = true;
-    }
-    
-    function _getLevelPasscode(uint8 level) private pure returns (string memory) {
-        if (level == 0) return "wake_up";
-        if (level == 1) return "white_rabbit";
-        if (level == 2) return "red_pill";
-        if (level == 3) return "i_know_kung_fu";
-        if (level == 4) return "there_is_no_spoon";
-        return "";
+        passcodeHashes[level] = passcodeHash;
     }
     
     // To receive ETH for rewards
