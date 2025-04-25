@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { hardhat } from "viem/chains";
-import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, BugAntIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-eth";
 
@@ -62,54 +62,101 @@ export const Header = () => {
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const burgerMenuRef = useRef<HTMLDivElement>(null);
   useOutsideClick(
     burgerMenuRef,
     useCallback(() => setIsDrawerOpen(false), []),
   );
 
-  return (
-    <div className="sticky lg:static top-0 navbar bg-base-100 min-h-0 flex-shrink-0 justify-between z-20 shadow-md shadow-secondary px-0 sm:px-2">
-      <div className="navbar-start w-auto lg:w-1/2">
-        <div className="lg:hidden dropdown" ref={burgerMenuRef}>
-          <label
-            tabIndex={0}
-            className={`ml-1 btn btn-ghost ${isDrawerOpen ? "hover:bg-secondary" : "hover:bg-transparent"}`}
-            onClick={() => {
-              setIsDrawerOpen(prevIsOpenState => !prevIsOpenState);
-            }}
+  // Load minimized state from localStorage on component mount
+  useEffect(() => {
+    const storedMinimizedState = localStorage.getItem("headerMinimized");
+    if (storedMinimizedState) {
+      setIsMinimized(storedMinimizedState === "true");
+    }
+  }, []);
+
+  // Save minimized state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("headerMinimized", isMinimized.toString());
+  }, [isMinimized]);
+
+  // Toggle minimized state
+  const toggleMinimized = () => {
+    setIsMinimized(prev => !prev);
+  };
+
+  // If minimized, show a small header with just the toggle button
+  if (isMinimized) {
+    return (
+      <>
+        <div className="fixed top-0 left-0 right-0 z-20 bg-black/50 backdrop-blur-sm h-4 flex justify-center">
+          <div
+            className="w-12 h-4 bg-matrix-dark-green rounded-b-md flex items-center justify-center cursor-pointer shadow-md"
+            onClick={toggleMinimized}
           >
-            <Bars3Icon className="h-1/2" />
-          </label>
-          {isDrawerOpen && (
-            <ul
+            <ChevronDownIcon className="h-3 w-3 text-matrix-green" />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="sticky lg:static top-0 navbar bg-base-100 min-h-0 flex-shrink-0 justify-between z-20 shadow-md shadow-secondary px-0 sm:px-2">
+        <div className="navbar-start w-auto lg:w-1/2">
+          <div className="lg:hidden dropdown" ref={burgerMenuRef}>
+            <label
               tabIndex={0}
-              className="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52"
+              className={`ml-1 btn btn-ghost ${isDrawerOpen ? "hover:bg-secondary" : "hover:bg-transparent"}`}
               onClick={() => {
-                setIsDrawerOpen(false);
+                setIsDrawerOpen(prevIsOpenState => !prevIsOpenState);
               }}
             >
-              <HeaderMenuLinks />
-            </ul>
-          )}
+              <Bars3Icon className="h-1/2" />
+            </label>
+            {isDrawerOpen && (
+              <ul
+                tabIndex={0}
+                className="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                }}
+              >
+                <HeaderMenuLinks />
+              </ul>
+            )}
+          </div>
+          <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
+            <div className="flex relative w-10 h-10">
+              <Image alt="SE2 logo" className="cursor-pointer" fill src="/logo.svg" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold leading-tight">Scaffold-ETH</span>
+              <span className="text-xs">Ethereum dev stack</span>
+            </div>
+          </Link>
+          <ul className="hidden lg:flex lg:flex-nowrap menu menu-horizontal px-1 gap-2">
+            <HeaderMenuLinks />
+          </ul>
         </div>
-        <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
-          <div className="flex relative w-10 h-10">
-            <Image alt="SE2 logo" className="cursor-pointer" fill src="/logo.svg" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold leading-tight">Scaffold-ETH</span>
-            <span className="text-xs">Ethereum dev stack</span>
-          </div>
-        </Link>
-        <ul className="hidden lg:flex lg:flex-nowrap menu menu-horizontal px-1 gap-2">
-          <HeaderMenuLinks />
-        </ul>
+        <div className="navbar-end flex-grow mr-4">
+          <RainbowKitCustomConnectButton />
+          {isLocalNetwork && <FaucetButton />}
+        </div>
       </div>
-      <div className="navbar-end flex-grow mr-4">
-        <RainbowKitCustomConnectButton />
-        {isLocalNetwork && <FaucetButton />}
+
+      {/* Smaller chevron tab at the bottom of header */}
+      <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50">
+        <div
+          className="w-12 h-4 bg-matrix-dark-green rounded-b-md flex items-center justify-center cursor-pointer shadow-md"
+          onClick={toggleMinimized}
+        >
+          <ChevronUpIcon className="h-3 w-3 text-matrix-green" />
+        </div>
       </div>
-    </div>
+    </>
   );
 };

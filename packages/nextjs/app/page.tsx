@@ -190,6 +190,9 @@ const Home: NextPage = () => {
         // Complete the animation
         setIsAnimating(false);
         setShowPasscodeInput(true);
+
+        // Ensure we scroll to bottom after animation completes
+        scrollToBottom(100);
         return;
       }
 
@@ -384,7 +387,11 @@ const Home: NextPage = () => {
     // Handle different command modes
     if (commandMode === "passcode") {
       const cleanedPasscode = cmd.trim().toLowerCase();
-      setOutput(prev => [...prev, `> ${cmd}`, "Attempting to validate passcode..."]);
+      setOutput(prev => {
+        const newOutput = [...prev, `> ${cmd}`, "Attempting to validate passcode..."];
+        scrollToBottom(10);
+        return newOutput;
+      });
       setIsWaiting(true);
 
       try {
@@ -392,7 +399,11 @@ const Home: NextPage = () => {
           functionName: "solveLevel",
           args: [cleanedPasscode],
         });
-        setOutput(prev => [...prev, "Access granted!", ""]);
+        setOutput(prev => {
+          const newOutput = [...prev, "Access granted!", ""];
+          scrollToBottom(10);
+          return newOutput;
+        });
 
         // Add glitch effect after success
         let glitchCount = 0;
@@ -421,11 +432,16 @@ const Home: NextPage = () => {
           }
         }
 
-        setOutput(prev => [...prev, `Access denied: ${errorMsg}`, ""]);
+        setOutput(prev => {
+          const newOutput = [...prev, `Access denied: ${errorMsg}`, ""];
+          scrollToBottom(10);
+          return newOutput;
+        });
       }
 
       setIsWaiting(false);
       setCommandMode("normal");
+      scrollToBottom(100); // Extra scrolling after mode change
       return;
     }
 
@@ -459,59 +475,96 @@ const Home: NextPage = () => {
       case "clear":
         // Clear the terminal completely
         setOutput([]);
+        scrollToBottom();
         break;
 
       case "reset":
-        setOutput(prev => [...prev, `> ${cmd}`, "Resetting terminal...", "Clearing system cache..."]);
+        setOutput(prev => {
+          const newOutput = [...prev, `> ${cmd}`, "Resetting terminal...", "Clearing system cache..."];
+          scrollToBottom(10);
+          return newOutput;
+        });
         setTimeout(() => resetTerminal(), 1500);
         break;
 
       case "status":
         if (!isConnected) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
         if (userProgress) {
           const [level, levelName, hint, hasRedPill] = userProgress;
-          setOutput(prev => [
-            ...prev,
-            `> ${cmd}`,
-            `User: ${connectedAddress}`,
-            `Access Level: ${level}`,
-            `Current Mission: ${levelName}`,
-            `Hint: ${hint}`,
-            hasRedPill ? "Red Pill Status: ACTIVE" : "Red Pill Status: INACTIVE",
-            "",
-          ]);
+          setOutput(prev => {
+            const newOutput = [
+              ...prev,
+              `> ${cmd}`,
+              `User: ${connectedAddress}`,
+              `Access Level: ${level}`,
+              `Current Mission: ${levelName}`,
+              `Hint: ${hint}`,
+              hasRedPill ? "Red Pill Status: ACTIVE" : "Red Pill Status: INACTIVE",
+              "",
+            ];
+            scrollToBottom(10);
+            return newOutput;
+          });
         } else {
-          setOutput(prev => [...prev, `> ${cmd}`, "Unable to retrieve status. System may be offline.", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Unable to retrieve status. System may be offline.", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
         }
         break;
 
       case "hack":
         if (!isConnected) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
-        setOutput(prev => [...prev, `> ${cmd}`, "Enter passcode:"]);
+        setOutput(prev => {
+          const newOutput = [...prev, `> ${cmd}`, "Enter passcode:"];
+          scrollToBottom(10);
+          return newOutput;
+        });
         setCommandMode("passcode");
         break;
 
       case "secret":
         if (!isConnected) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
         if (!args.length) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Usage: secret <phrase>", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Usage: secret <phrase>", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
         const secretPhrase = args.join(" ");
-        setOutput(prev => [...prev, `> ${cmd} ${secretPhrase}`, "Searching for secret..."]);
+        setOutput(prev => {
+          const newOutput = [...prev, `> ${cmd} ${secretPhrase}`, "Searching for secret..."];
+          scrollToBottom(10);
+          return newOutput;
+        });
 
         setIsWaiting(true);
         try {
@@ -519,9 +572,17 @@ const Home: NextPage = () => {
             functionName: "discoverSecret",
             args: [secretPhrase],
           });
-          setOutput(prev => [...prev, "Secret discovered! Reward sent to your wallet.", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, "Secret discovered! Reward sent to your wallet.", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
         } catch (error: any) {
-          setOutput(prev => [...prev, `Secret not found: ${error.message || "Invalid secret phrase"}`, ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `Secret not found: ${error.message || "Invalid secret phrase"}`, ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
         }
         setIsWaiting(false);
         break;
@@ -562,52 +623,68 @@ const Home: NextPage = () => {
         break;
 
       case "about":
-        setOutput(prev => [
-          ...prev,
-          `> ${cmd}`,
-          "The Matrix is a system, Neo.",
-          "That system is our enemy.",
-          "When you're inside, you look around, what do you see?",
-          "Businessmen, teachers, lawyers, carpenters.",
-          "The very minds of the people we are trying to save.",
-          "But until we do, these people are still a part of that system...",
-          "You have to understand, most of these people are not ready to be unplugged.",
-          "And many of them are so inured, so hopelessly dependent on the system,",
-          "that they will fight to protect it.",
-          "",
-          "— Morpheus",
-          "",
-        ]);
+        setOutput(prev => {
+          const newOutput = [
+            ...prev,
+            `> ${cmd}`,
+            "The Matrix is a system, Neo.",
+            "That system is our enemy.",
+            "When you're inside, you look around, what do you see?",
+            "Businessmen, teachers, lawyers, carpenters.",
+            "The very minds of the people we are trying to save.",
+            "But until we do, these people are still a part of that system...",
+            "You have to understand, most of these people are not ready to be unplugged.",
+            "And many of them are so inured, so hopelessly dependent on the system,",
+            "that they will fight to protect it.",
+            "",
+            "— Morpheus",
+            "",
+          ];
+          scrollToBottom(10);
+          return newOutput;
+        });
         break;
 
       case "debug-passcode":
         if (!isConnected) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Connect your wallet to access the Matrix", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
         if (!args.length) {
-          setOutput(prev => [...prev, `> ${cmd}`, "Usage: debug-passcode <passcode>", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, `> ${cmd}`, "Usage: debug-passcode <passcode>", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
           break;
         }
 
         const testPasscode = args.join(" ").trim().toLowerCase();
-        setOutput(prev => [
-          ...prev,
-          `> ${cmd} ${testPasscode}`,
-          "Debug info:",
-          `Passcode to test: "${testPasscode}"`,
-          `Current level: ${userProgress ? userProgress[0] : "unknown"}`,
-          `Hashed value: ${
-            testPasscode
-              ? "0x" +
-                Array.from(new TextEncoder().encode(testPasscode))
-                  .map(b => b.toString(16).padStart(2, "0"))
-                  .join("")
-              : "none"
-          }`,
-          "Attempting test validation...",
-        ]);
+        setOutput(prev => {
+          const newOutput = [
+            ...prev,
+            `> ${cmd} ${testPasscode}`,
+            "Debug info:",
+            `Passcode to test: "${testPasscode}"`,
+            `Current level: ${userProgress ? userProgress[0] : "unknown"}`,
+            `Hashed value: ${
+              testPasscode
+                ? "0x" +
+                  Array.from(new TextEncoder().encode(testPasscode))
+                    .map(b => b.toString(16).padStart(2, "0"))
+                    .join("")
+                : "none"
+            }`,
+            "Attempting test validation...",
+          ];
+          scrollToBottom(10);
+          return newOutput;
+        });
 
         setIsWaiting(true);
         try {
@@ -615,27 +692,40 @@ const Home: NextPage = () => {
             functionName: "solveLevel",
             args: [testPasscode],
           });
-          setOutput(prev => [...prev, "Success! Passcode is valid.", ""]);
+          setOutput(prev => {
+            const newOutput = [...prev, "Success! Passcode is valid.", ""];
+            scrollToBottom(10);
+            return newOutput;
+          });
         } catch (error: any) {
           console.error("Debug passcode error:", error);
-          setOutput(prev => [
-            ...prev,
-            "Failed to validate passcode.",
-            `Error: ${error.message || "Unknown error"}`,
-            "",
-          ]);
+          setOutput(prev => {
+            const newOutput = [
+              ...prev,
+              "Failed to validate passcode.",
+              `Error: ${error.message || "Unknown error"}`,
+              "",
+            ];
+            scrollToBottom(10);
+            return newOutput;
+          });
         }
         setIsWaiting(false);
         break;
 
       default:
-        setOutput(prev => [
-          ...prev,
-          `> ${cmd}`,
-          `Command not found: ${command}`,
-          "Type 'help' for available commands",
-          "",
-        ]);
+        setOutput(prev => {
+          const newOutput = [
+            ...prev,
+            `> ${cmd}`,
+            `Command not found: ${command}`,
+            "Type 'help' for available commands",
+            "",
+          ];
+          scrollToBottom(10);
+          return newOutput;
+        });
+        break;
     }
   };
 
@@ -780,20 +870,7 @@ const Home: NextPage = () => {
           <p>Hint: "Wake up..." [Complete the phrase]</p>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-          <Link href="/matrix" passHref className="block">
-            <div className="bg-green-900/30 border-2 border-green-500 p-6 rounded-md hover:bg-green-900/50 transition-colors shadow-lg shadow-green-500/20 relative overflow-hidden">
-              <div className="absolute inset-0 bg-matrix-code opacity-10"></div>
-              <h3 className="text-green-400 font-mono text-xl font-bold mb-2">// ENTER MATRIX</h3>
-              <p className="text-green-300/70 font-mono text-sm">Access the full Matrix terminal and game interface</p>
-              <div className="mt-4 text-right">
-                <span className="inline-block bg-green-500/20 text-green-300 font-mono py-1 px-3 rounded text-sm">
-                  MAIN SYSTEM →
-                </span>
-              </div>
-            </div>
-          </Link>
-
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
           <Link href="/debug" passHref className="block">
             <div className="bg-black/70 border border-green-500 p-6 rounded-md hover:bg-green-900/20 transition-colors">
               <h3 className="text-green-400 font-mono text-lg mb-2">// DEBUG MODULE</h3>

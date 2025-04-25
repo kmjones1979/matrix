@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import "hardhat/console.sol";
+import "./MatrixNFT.sol";
 
 /**
  * @title The Matrix
@@ -25,12 +26,17 @@ contract MatrixContract {
     // Easter eggs and rewards
     mapping(bytes32 => uint256) private easterEggRewards; // Rewards for finding easter eggs
     
+    // NFT contract for level badges
+    MatrixNFT public nftContract;
+    bool public nftMintingEnabled = false;
+    
     // Events
     event LevelCompleted(address indexed user, uint8 level, uint256 timestamp);
     event SecretFound(address indexed user, string secretId);
     event RedPillTaken(address indexed user);
     event BluePillTaken(address indexed user);
     event MatrixEntered(address indexed user);
+    event NFTMinted(address indexed user, uint8 level, uint256 tokenId);
     
     // Constructor
     constructor(address _oracle) {
@@ -70,6 +76,23 @@ contract MatrixContract {
     }
     
     /**
+     * @dev Sets the NFT contract address
+     * @param _nftContract The address of the NFT contract
+     */
+    function setNFTContract(address _nftContract) external onlyOracle {
+        nftContract = MatrixNFT(_nftContract);
+        nftMintingEnabled = true;
+    }
+    
+    /**
+     * @dev Enables or disables NFT minting
+     * @param _enabled Whether NFT minting is enabled
+     */
+    function setNFTMintingEnabled(bool _enabled) external onlyOracle {
+        nftMintingEnabled = _enabled;
+    }
+    
+    /**
      * @dev Attempt to solve the current level with a passcode
      * @param passcode The passcode to try
      */
@@ -84,7 +107,7 @@ contract MatrixContract {
         // Verify passcode
         bytes32 passcodeHash = keccak256(abi.encodePacked(passcode));
         
-        // Use stored hash for validation instead of hardcoded values
+        // Use stored hash for validation
         require(passcodeHash == passcodeHashes[currentLevel], "Incorrect passcode");
         
         // Level up the user
@@ -98,6 +121,17 @@ contract MatrixContract {
         
         // Emit level completion event
         emit LevelCompleted(msg.sender, currentLevel, block.timestamp);
+        
+        // Mint NFT badge for the level if enabled
+        if (nftMintingEnabled && address(nftContract) != address(0)) {
+            // NFT levels are 1-based (level 1-5), but our userLevel is 0-based
+            uint8 completedLevel = currentLevel + 1;
+            
+            uint256 tokenId = nftContract.mintLevelBadge(msg.sender, completedLevel);
+            if (tokenId > 0) {
+                emit NFTMinted(msg.sender, completedLevel, tokenId);
+            }
+        }
         
         // If user reaches final level
         if (currentLevel + 1 == 5) {
